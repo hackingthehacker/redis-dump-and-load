@@ -11,12 +11,13 @@ def dump(fp, keys="*", host='localhost', port=6379, password=None, db=0, pretty=
         kwargs['separators'] = (',', ':')
     else:
         kwargs['indent'] = 2
-        kwargs['sort_keys'] = True
+        kwargs['sort_keys'] = False
 
     encoder = json.JSONEncoder(**kwargs)
 
     key_count = 0
 
+    fp.write("[")
     for key, type, value in _reader(r, keys, pretty):
         d = {}
         d[key] = {'type':type, 'value':value}
@@ -25,8 +26,9 @@ def dump(fp, keys="*", host='localhost', port=6379, password=None, db=0, pretty=
         else:
             item = json.dumps(d)
         fp.write(item)
-        fp.write("\n")
+        fp.write("\n,")
         key_count = key_count + 1
+    fp.write("]")
 
     print key_count, ' keys dumped into the file'
 
