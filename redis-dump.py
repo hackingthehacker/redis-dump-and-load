@@ -4,14 +4,14 @@ import sys
 import optparse
 import datetime
 
-def dump(fp, keys="*", host='localhost', port=6379, password=None, db=0, pretty=False):
+def dump(fp, keys="*", host='localhost', port=6379, password=None, db=0, pretty=False, as_json=False):
     r = redis.Redis(host=host, port=port, password=password, db=db)
     kwargs = {}
     if not pretty:
         kwargs['separators'] = (',', ':')
     else:
         kwargs['indent'] = 2
-        kwargs['sor_keys'] = True
+        kwargs['sort_keys'] = True
 
     encoder = json.JSONEncoder(**kwargs)
 
@@ -20,7 +20,10 @@ def dump(fp, keys="*", host='localhost', port=6379, password=None, db=0, pretty=
     for key, type, value in _reader(r, keys, pretty):
         d = {}
         d[key] = {'type':type, 'value':value}
-        item = encoder.encode(d)
+        if as_json is False:
+            item = encoder.encode(d)
+        else:
+            item = json.dumps(d)
         fp.write(item)
         fp.write("\n")
         key_count = key_count + 1
@@ -109,6 +112,8 @@ def opions_to_kwargs(options):
         args['save'] = options.save
     if options.key:
         args['key'] = options.key
+    if options.json:     
+        args['json'] = options.json
     return args
 
 def generate_filename():
@@ -122,7 +127,7 @@ def process(options):
         print 'either load or save option should be enabled'
     elif options.save:
         output = open(args['save'], 'w')
-        dump(output, args['key'] if options.key else "*", args['host'], args['port'], None, args['db'])
+        dump(output, args['key'] if options.key else "*", args['host'], args['port'], None, args['db'], args['json'])
         output.close()
     elif options.load:
         input = open(args['load'], 'r')
@@ -149,6 +154,7 @@ if __name__ == '__main__':
     parser.add_option('-l', '--load', help='Load from dump file')
     parser.add_option('-s', '--save', help='Save to dump file')
     parser.add_option('-k', '--key', help='Search Key(default is *)')
+    parser.add_option('-j', '--json', help='Dump as json text')
 
     options, args = parser.parse_args()
 
